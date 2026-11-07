@@ -20,6 +20,9 @@ from custom_components.qolsys_panel.const import (
     OPTION_ARM_CODE,
     OPTION_DISARM_CODE,
 )
+from custom_components.qolsys_panel.credential_storage import (
+    CredentialStorageLockedError,
+)
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -166,6 +169,7 @@ async def test_unload_unregisters_connection_logger(
         (QolsysConfigError("boom"), ConfigEntryState.SETUP_RETRY),
         (QolsysSslError("boom"), ConfigEntryState.SETUP_ERROR),
         (QolsysMqttError("boom"), ConfigEntryState.SETUP_RETRY),
+        (CredentialStorageLockedError("locked"), ConfigEntryState.SETUP_RETRY),
     ],
 )
 async def test_setup_controller_startup_errors(

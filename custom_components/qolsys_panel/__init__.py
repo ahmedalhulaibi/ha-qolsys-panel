@@ -29,6 +29,7 @@ from .const import (
     OPTION_MOTION_SENSOR_DELAY,
     OPTION_MOTION_SENSOR_DELAY_ENABLED,
 )
+from .credential_storage import CredentialStorageLockedError, install_pki_hardening
 from .pin_auth import install_pin_auth
 from .services import async_setup_services
 from .types import QolsysPanelConfigEntry
@@ -64,6 +65,10 @@ def _setup_error(
     exc: BaseException | None,
 ) -> ConfigEntryAuthFailed | ConfigEntryNotReady:
     """Map a fatal controller startup failure to the right ConfigEntry* error."""
+    if isinstance(exc, CredentialStorageLockedError):
+        return ConfigEntryNotReady(
+            translation_domain=DOMAIN, translation_key="storage_locked"
+        )
     if isinstance(exc, (QolsysSslError, ssl.SSLError)):
         return ConfigEntryAuthFailed(
             translation_domain=DOMAIN, translation_key="authentication_failed"
@@ -107,6 +112,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: QolsysPanelConfigEntry) 
 
     # Verify hashed PINs before SDK commands, keeping KDF work off the event loop.
     install_pin_auth(QolsysPanel, hass)
+    install_pki_hardening(QolsysPanel, hass)
 
     QolsysPanel.settings.motion_sensor_delay_sec = entry.options.get(
         OPTION_MOTION_SENSOR_DELAY, DEFAULT_MOTION_SENSOR_DELAY

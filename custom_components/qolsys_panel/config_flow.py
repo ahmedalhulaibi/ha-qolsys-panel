@@ -52,6 +52,11 @@ from .const import (
     OPTION_TRIGGER_FIRE,
     OPTION_TRIGGER_POLICE,
 )
+from .credential_storage import (
+    CredentialStorageLockedError,
+    check_storage_guard,
+    install_pki_hardening,
+)
 from .pin_auth import PinStoreError, is_valid_pin, panel_users, set_user_pin
 from .types import QolsysPanelConfigEntry
 from .utils import get_local_ip
@@ -74,6 +79,7 @@ _MAC_DIR_NAME_RE = re.compile(r"[0-9A-Fa-f]{12}")
 # _try_connect error codes that mean a failed connection/pairing attempt (as opposed
 # to fixable user input such as a bad host or an incomplete PKI selection).
 _CONNECTION_FAILURE_ERRORS = {
+    "storage_locked",
     "authentication_failed",
     "cannot_connect",
     "configuration_error",
@@ -506,6 +512,8 @@ class QolsysPanelConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Stop the controller and interrupt the flow with the specific failure reason."""
         await self._async_stop_controller()
+        if result["base"] == "storage_locked":
+            return self.async_abort(reason="storage_locked")
         reason_text = self._error_placeholders.get("reason") or result["base"]
         return self.async_abort(
             reason="pairing_failed",
@@ -531,6 +539,13 @@ class QolsysPanelConfigFlow(ConfigFlow, domain=DOMAIN):
         self._QolsysPanel.settings.pairing_resume = resume_pairing
         self._QolsysPanel.settings.mqtt_bridge_enabled = False
         self._QolsysPanel._pki.set_id(random_mac)
+        install_pki_hardening(self._QolsysPanel, self.hass)
+        try:
+            await self.hass.async_add_executor_job(
+                check_storage_guard, self._config_directory
+            )
+        except CredentialStorageLockedError:
+            return {"base": "storage_locked"}
 
         # if start_pairing is True, set home assistant zeroconf shared instance
         if start_pairing:

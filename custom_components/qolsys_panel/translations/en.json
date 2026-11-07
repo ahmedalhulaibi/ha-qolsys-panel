@@ -8,7 +8,8 @@
       "already_configured": "Qolsys Panel is already configured.",
       "unique_id_mismatch": "The connected panel does not match the panel configured in this entry.",
       "pairing_failed": "Pairing failed: {reason}",
-      "no_pki_found": "No existing PKI found. Pair with the panel first to create one."
+      "no_pki_found": "No existing PKI found. Pair with the panel first to create one.",
+      "storage_locked": "Encrypted Qolsys storage is locked. Unlock it on the host, then restart the Home Assistant container."
     },
     "progress": {
       "pairing": "Press the **Pair** button on the panel's IQ Remote config page.\n\nWaiting for the panel to connect {plugin_ip}:{port}"
@@ -29,11 +30,11 @@
           "existing_pki": "Use Existing PKI"
         }
       },
-      "pki_autodiscovery":{
+      "pki_autodiscovery": {
         "title": "Qolsys Panel - Automatic Panel Discovery",
         "description": "Autodiscovery Mode:\n1. Make sure Home Assistant and the panel are on the same subnet\n2. Open the IQ Remote pairing page on the Qolsys Panel\n\nPress Submit to start pairing."
       },
-      "existing_pki":{
+      "existing_pki": {
         "title": "Qolsys Panel - Existing PKI",
         "description": "Connect to your Qolsys Panel using an existing client certificate.",
         "data": {
@@ -41,7 +42,7 @@
           "host": "Qolsys Panel IP Address"
         }
       },
-      "reconfigure":{
+      "reconfigure": {
         "title": "Qolsys Panel - Reconfigure",
         "description": "Update your Qolsys Panel connection settings.",
         "data": {
@@ -60,7 +61,8 @@
       "qolsys_certificate_not_found": "Qolsys certificate file not found for PKI: {random_mac}",
       "invalid_panel_ip": "Invalid Panel IP: {panel_ip}",
       "invalid_plugin_ip": "Invalid Plugin IP: {plugin_ip}",
-      "unknown": "Unexpected error occurred."
+      "unknown": "Unexpected error occurred.",
+      "storage_locked": "Encrypted Qolsys storage is locked. Unlock it on the host, then restart the Home Assistant container."
     }
   },
   "options": {
@@ -141,6 +143,9 @@
     },
     "mqtt_error": {
       "message": "Qolsys Panel MQTT communication error."
+    },
+    "storage_locked": {
+      "message": "Encrypted Qolsys storage is locked. Unlock it on the host, then restart the Home Assistant container."
     }
   },
   "entity": {

@@ -8,7 +8,8 @@
       "already_configured": "Le panneau Qolsys est déjà configuré.",
       "unique_id_mismatch": "Le panneau connecté ne correspond pas au panneau configuré pour cette entrée.",
       "pairing_failed": "L'appairage a échoué : {reason}",
-      "no_pki_found": "Aucun PKI existant trouvé. Jumelez d'abord le panneau pour en créer un."
+      "no_pki_found": "Aucun PKI existant trouvé. Jumelez d'abord le panneau pour en créer un.",
+      "storage_locked": "Le stockage chiffré Qolsys est verrouillé. Déverrouillez-le sur le serveur, puis redémarrez le conteneur Home Assistant."
     },
     "progress": {
       "pairing": "Appuyez sur le bouton **Jumeler** dans la page de configuration IQ Remote du panneau.\n\nEn attente de la connexion du panneau à {plugin_ip}:{port}"
@@ -60,7 +61,8 @@
       "qolsys_certificate_not_found": "Fichier de certificat Qolsys introuvable pour le PKI : {random_mac}",
       "invalid_panel_ip": "Adresse IP du panneau invalide : {panel_ip}",
       "invalid_plugin_ip": "Adresse IP du plugiciel invalide : {plugin_ip}",
-      "unknown": "Une erreur inattendue est survenue."
+      "unknown": "Une erreur inattendue est survenue.",
+      "storage_locked": "Le stockage chiffré Qolsys est verrouillé. Déverrouillez-le sur le serveur, puis redémarrez le conteneur Home Assistant."
     }
   },
   "options": {
@@ -141,6 +143,9 @@
     },
     "mqtt_error": {
       "message": "Erreur de communication MQTT avec le panneau Qolsys."
+    },
+    "storage_locked": {
+      "message": "Le stockage chiffré Qolsys est verrouillé. Déverrouillez-le sur le serveur, puis redémarrez le conteneur Home Assistant."
     }
   },
   "entity": {

@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Iterable
+import json
 import logging
 from pathlib import Path
 from ssl import SSLError
@@ -130,6 +131,26 @@ async def test_user_menu(hass: HomeAssistant, mock_qolsys_controller: MagicMock)
         "pki_autodiscovery",
         "existing_pki",
     }
+
+
+async def test_locked_storage_blocks_pairing_before_sdk_connection(
+    hass,
+    mock_qolsys_controller,
+    pki_dir,
+    tmp_config_dir,
+):
+    guard = tmp_config_dir / ".qolsys-storage.json"
+    guard.write_text(
+        json.dumps({"version": 1, "require_mount": True, "volume_id": "1" * 32})
+    )
+    guard.chmod(0o600)
+    result = await _start_menu_step(hass, "existing_pki")
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], EXISTING_PKI_USER_INPUT
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "storage_locked"
+    mock_qolsys_controller.run_forever.assert_not_called()
 
 
 DISCOVERY_IP = "192.168.1.77"

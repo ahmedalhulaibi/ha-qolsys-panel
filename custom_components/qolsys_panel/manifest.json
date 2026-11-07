@@ -17,6 +17,6 @@
   "issue_tracker": "https://github.com/ahmedalhulaibi/ha-qolsys-panel/issues",
   "loggers": ["qolsys_panel", "qolsys_controller"],
   "requirements": ["qolsys-controller==1.12.7", "cryptography==50.0.2"],
-  "version": "1.13.4"
+  "version": "1.13.5"
 }
 

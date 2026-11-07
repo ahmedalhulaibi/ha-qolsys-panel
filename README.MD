@@ -157,6 +157,28 @@ The salt is stored with the hash and is not a secret. Hashing protects the store
 PIN verifier; an administrator with access to Home Assistant or its pairing
 credentials can still control the panel.
 
+### Private pairing credentials and encrypted storage
+
+This fork enforces `0700` on the Qolsys data directories and `0600` on their
+files, including private keys and signed certificates. Setup and pairing fail
+closed on symlinks, hard-linked files, unexpected ownership, or a permissions
+error. The SDK creates new credentials inside an already private ancestor, and
+the fork restricts the resulting files after generation and pairing.
+
+Permissions protect access by other local users. To encrypt credentials at rest,
+place `<config>/qolsys_panel` on an encrypted filesystem. Its unlock passphrase
+should be managed on the host, outside the integration and its config entry.
+
+Deployments that require manual unlock can create a root-owned `0600` guard at
+`<config>/.qolsys-storage.json`, with `version: 1`, `require_mount: true`, and a
+`volume_id` containing 32 lowercase hexadecimal characters. Store the same ID in
+`<config>/qolsys_panel/.qolsys-volume-id` with mode `0600` on the encrypted volume.
+The integration requires a mounted filesystem and matching marker before any
+credential setup. This prevents a locked or missing volume from silently falling
+back to plaintext storage. Home Assistant can run its other integrations while
+Qolsys waits for the volume to be unlocked. On Docker installations, restart the
+Home Assistant container after mounting the volume so it sees the new submount.
+
 ## ✅ Supported Devices
 
 Any **Qolsys Panel** that can be paired with an **IQ Remote**:
