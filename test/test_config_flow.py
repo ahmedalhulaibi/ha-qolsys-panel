@@ -783,8 +783,13 @@ async def test_options_flow(
     await hass.async_block_till_done()
 
     result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert result["type"] is FlowResultType.MENU
+    assert set(cast("Iterable[str]", result["menu_options"])) == {"settings", "pin"}
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "init"
+    assert result["step_id"] == "settings"
 
     user_input = {
         OPTION_ARM_CODE: True,

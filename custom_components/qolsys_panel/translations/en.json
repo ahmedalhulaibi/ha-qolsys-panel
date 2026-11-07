@@ -64,22 +64,47 @@
     }
   },
   "options": {
-      "step": {
-        "init": {
-          "title": "Qolsys Panel - Options",
-          "data": {
-            "option_arm_code": "User Code required to Arm",
-            "option_disarm_code": "User Code required to Disarm",
-            "option_trigger_police": "Enable Trigger Police Alarm",
-            "option_trigger_auxilliary": "Enable Trigger Auxiliary Alarm",
-            "option_trigger_fire": "Enable Trigger Fire Alarm",
-            "option_peek_in_picture": "Enable Peek In Picture",
-            "option_motion_sensor_delay_enabled": "Enable Motions Sensor Delay",
-            "option_motion_sensor_delay": "Motion Sensors Delay (seconds)"       
-          }
+    "step": {
+      "init": {
+        "title": "Qolsys Panel - Options",
+        "menu_options": {
+          "settings": "General settings",
+          "pin": "Set or change Home Assistant PIN"
+        }
+      },
+      "settings": {
+        "title": "Qolsys Panel - Options",
+        "data": {
+          "option_arm_code": "User Code required to Arm",
+          "option_disarm_code": "User Code required to Disarm",
+          "option_trigger_police": "Enable Trigger Police Alarm",
+          "option_trigger_auxilliary": "Enable Trigger Auxiliary Alarm",
+          "option_trigger_fire": "Enable Trigger Fire Alarm",
+          "option_peek_in_picture": "Enable Peek In Picture",
+          "option_motion_sensor_delay_enabled": "Enable Motions Sensor Delay",
+          "option_motion_sensor_delay": "Motion Sensors Delay (seconds)"
+        }
+      },
+      "pin": {
+        "title": "Home Assistant PIN",
+        "description": "Choose your panel user and a separate Home Assistant PIN of 8–12 digits. This does not change your physical panel code. Only a salted hash is saved, and the PIN takes effect immediately. No command is sent to the alarm panel.",
+        "data": {
+          "panel_user": "Panel user",
+          "pin": "New Home Assistant PIN",
+          "pin_confirm": "Confirm PIN"
         }
       }
     },
+    "abort": {
+      "pin_panel_unavailable": "Connect the Qolsys panel before setting a PIN. General settings remain available."
+    },
+    "error": {
+      "invalid_pin_user": "Choose a user that still exists on the panel.",
+      "invalid_pin": "Use a separate Home Assistant PIN of 8–12 digits (0–9).",
+      "pin_mismatch": "The PINs do not match. Please enter them again.",
+      "cannot_save_pin": "The PIN could not be saved. Check access to the configuration directory and try again."
+    }
+  },
   "exceptions": {
     "integration_not_found": {
       "message": "Integration \"{target}\" not found in registry."

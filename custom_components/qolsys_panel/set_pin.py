@@ -61,7 +61,6 @@ def main() -> int:
             print("Choose an ID from the list above.")
             return 1
         user_id = int(selected)
-        records = auth.load_records(path)
         print("Choose a separate Home Assistant PIN of 8 to 12 digits.")
         print("It will not change your physical panel code.")
         pin = getpass.getpass("New PIN (hidden): ")
@@ -69,12 +68,8 @@ def main() -> int:
         if pin != repeat:
             print("PINs did not match. Nothing saved.")
             return 1
-        encoded = auth.make_hash(pin)
+        auth.set_user_pin(path, user_id, pin, allowed)
         del pin, repeat
-        records = [record for record in records if record["id"] != user_id]
-        records.append({"id": user_id, "user_code_hash": encoded})
-        auth.validate_records(records)
-        auth.write_private_json(path, records)
         print("Saved an Argon2id hash with a random salt and 0600 file permissions.")
         print("Ready immediately; Home Assistant does not need a restart.")
         return 0

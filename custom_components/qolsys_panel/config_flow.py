@@ -52,6 +52,7 @@ from .const import (
     OPTION_TRIGGER_FIRE,
     OPTION_TRIGGER_POLICE,
 )
+from .pin_auth import PinStoreError, is_valid_pin, panel_users, set_user_pin
 from .types import QolsysPanelConfigEntry
 from .utils import get_local_ip
 
@@ -621,6 +622,80 @@ class QolsysPanelOptionsFlowHandler(OptionsFlowWithReload):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
+        """Choose general settings or private PIN enrollment."""
+        return self.async_show_menu(step_id="init", menu_options=["settings", "pin"])
+
+    async def async_step_pin(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Hash a PIN immediately, without persisting it in config entry options."""
+        controller = getattr(self.config_entry, "runtime_data", None)
+        if controller is None or not (users := panel_users(controller)):
+            return self.async_abort(reason="pin_panel_unavailable")
+        allowed = frozenset(user["id"] for user in users)
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            # Remove secrets before processing; never retain the submitted form
+            # on this flow object or pass it to async_create_entry/show_form.
+            pin = user_input.pop("pin", "")
+            confirmation = user_input.pop("pin_confirm", "")
+            selected = user_input.get("panel_user", "")
+            if not isinstance(selected, str) or selected not in {
+                str(i) for i in allowed
+            }:
+                errors["panel_user"] = "invalid_pin_user"
+            elif not is_valid_pin(pin):
+                errors["pin"] = "invalid_pin"
+            elif pin != confirmation:
+                errors["pin_confirm"] = "pin_mismatch"
+            else:
+                try:
+                    await self.hass.async_add_executor_job(
+                        set_user_pin,
+                        Path(controller.settings.users_file_path),
+                        int(selected),
+                        pin,
+                        allowed,
+                    )
+                except (OSError, PinStoreError):
+                    # Exception text and traceback may hold secret locals.
+                    # Return a fixed error and never log enrollment input.
+                    errors["base"] = "cannot_save_pin"
+                else:
+                    return self.async_create_entry(data=dict(self.config_entry.options))
+            del pin, confirmation
+
+        return self.async_show_form(
+            step_id="pin",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("panel_user"): selector(
+                        {
+                            "select": {
+                                "options": [
+                                    {
+                                        "value": str(user["id"]),
+                                        "label": user["name"] or f"User {user['id']}",
+                                    }
+                                    for user in users
+                                ]
+                            }
+                        }
+                    ),
+                    vol.Required("pin"): selector(
+                        {"text": {"type": "password", "autocomplete": "new-password"}}
+                    ),
+                    vol.Required("pin_confirm"): selector(
+                        {"text": {"type": "password", "autocomplete": "new-password"}}
+                    ),
+                }
+            ),
+            errors=errors,
+        )
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(data=user_input)
@@ -679,6 +754,6 @@ class QolsysPanelOptionsFlowHandler(OptionsFlowWithReload):
         )
 
         return self.async_show_form(
-            step_id="init",
+            step_id="settings",
             data_schema=data_schema,
         )

@@ -120,8 +120,14 @@ When a code is required, this fork verifies a separate **Home Assistant PIN**
 locally, then sends the associated panel user ID. It does not change the physical
 panel's user code. A missing, malformed, or plaintext PIN file fails closed.
 
-After the integration connects, set your PIN in an interactive terminal. For a
-Home Assistant Container installation named `homeassistant`, run on its host:
+After the integration connects, open **Settings → Devices & Services → Qolsys
+Panel → Configure → Set or change Home Assistant PIN**. Choose your panel user,
+enter a separate 8–12 digit PIN twice in the masked fields, and submit. PINs are
+never prefilled or returned in the form, saved in config entry options, or logged
+by the integration. A PIN update is available immediately without a restart.
+
+An interactive terminal helper is also available. For a Home Assistant Container
+installation named `homeassistant`, run on its host:
 
 ```sh
 docker exec -it homeassistant python /config/custom_components/qolsys_panel/set_pin.py

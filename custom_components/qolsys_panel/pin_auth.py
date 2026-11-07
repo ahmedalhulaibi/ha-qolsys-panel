@@ -22,6 +22,7 @@ import re
 import secrets
 import stat
 import tempfile
+import threading
 import time
 from typing import TYPE_CHECKING, Any, TypedDict, cast
 
@@ -40,6 +41,7 @@ _PHC = re.compile(
 )
 _MAX_FILE_BYTES = 65536
 _MAX_USERS = 128
+_ENROLL_LOCK = threading.Lock()
 
 
 class PinStoreError(ValueError):
@@ -62,7 +64,7 @@ class PanelUser(TypedDict):
 
 def make_hash(pin: str) -> str:
     """Derive a PHC verifier with a fresh 256-bit random salt."""
-    if not isinstance(pin, str) or not _PIN.fullmatch(pin):
+    if not is_valid_pin(pin):
         raise PinStoreError("Use a separate Home Assistant PIN of 8 to 12 digits.")
     return Argon2id(
         salt=secrets.token_bytes(32),
@@ -71,6 +73,11 @@ def make_hash(pin: str) -> str:
         lanes=4,
         memory_cost=65536,
     ).derive_phc_encoded(pin.encode("ascii"))
+
+
+def is_valid_pin(pin: object) -> bool:
+    """Check the enrollment policy without hashing or retaining the PIN."""
+    return isinstance(pin, str) and _PIN.fullmatch(pin) is not None
 
 
 def _valid_hash(value: object) -> bool:
@@ -167,6 +174,22 @@ def verify_pin(path: Path, pin: str, allowed_ids: frozenset[int]) -> int:
             continue
         return record["id"]
     return -1
+
+
+def set_user_pin(
+    path: Path, user_id: int, pin: str, allowed_ids: frozenset[int]
+) -> None:
+    """Enroll a verifier in an executor, preserving all other user records."""
+    if type(user_id) is not int or user_id not in allowed_ids:
+        raise PinStoreError("Choose an existing panel user.")
+    # Serialize enrollment from simultaneous options flows in this process.
+    with _ENROLL_LOCK:
+        records = load_records(path)
+        encoded = make_hash(pin)
+        records = [record for record in records if record["id"] != user_id]
+        records.append({"id": user_id, "user_code_hash": encoded})
+        validate_records(records)
+        write_private_json(path, records)
 
 
 def panel_users(controller: QolsysController) -> list[PanelUser]:
