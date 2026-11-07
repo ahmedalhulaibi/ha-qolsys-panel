@@ -29,6 +29,7 @@ from .const import (
     OPTION_MOTION_SENSOR_DELAY,
     OPTION_MOTION_SENSOR_DELAY_ENABLED,
 )
+from .pin_auth import install_pin_auth
 from .services import async_setup_services
 from .types import QolsysPanelConfigEntry
 from .utils import get_local_ip
@@ -103,6 +104,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: QolsysPanelConfigEntry) 
 
     QolsysPanel.settings.check_user_code_on_arm = arm_code_required
     QolsysPanel.settings.check_user_code_on_disarm = disarm_code_required
+
+    # Verify hashed PINs before SDK commands, keeping KDF work off the event loop.
+    install_pin_auth(QolsysPanel, hass)
 
     QolsysPanel.settings.motion_sensor_delay_sec = entry.options.get(
         OPTION_MOTION_SENSOR_DELAY, DEFAULT_MOTION_SENSOR_DELAY

@@ -1,15 +1,27 @@
 # HA Qolsys Panel
 
-[![Build](https://github.com/EHylands/ha-qolsys-panel/actions/workflows/publish.yml/badge.svg)](https://github.com/EHylands/ha-qolsys-panel/actions/workflows/publish.yml)
-[![latest release](https://img.shields.io/github/v/release/EHylands/ha-qolsys-panel?logo=github&sort=semver)](https://github.com/EHylands/ha-qolsys-panel/releases)
+[![Build](https://github.com/ahmedalhulaibi/ha-qolsys-panel/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmedalhulaibi/ha-qolsys-panel/actions/workflows/ci.yml)
 
 This is a HACS custom integration for **Qolsys Panels** (such as IQ Panel 2+/4), allowing local pairing and control via Home Assistant.
 
+This fork of [EHylands/ha-qolsys-panel](https://github.com/EHylands/ha-qolsys-panel)
+adds Argon2id PIN verification and respects Home Assistant's selected network
+adapters when advertising the pairing server. The integration domain and existing
+pairing certificates are unchanged.
+
 ## 🧩 Installation
 
-This integration is now part of the official HACS store. 
+To use this fork with HACS, add `https://github.com/ahmedalhulaibi/ha-qolsys-panel`
+as a custom **Integration** repository. Use this repository instead of installing
+the upstream repository alongside it; both provide the `qolsys_panel` domain.
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=EHylands&repository=ha-qolsys-panel&category=Integration+)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ahmedalhulaibi&repository=ha-qolsys-panel&category=Integration+)
+
+For a manual installation, copy `custom_components/qolsys_panel` from a pinned
+commit of this fork into your Home Assistant configuration directory, then restart
+Home Assistant. Keep `<config>/qolsys_panel` intact: it contains pairing credentials
+and the PIN verifier file. This fork pins `qolsys-controller==1.12.7` and
+`cryptography==50.0.2`; it is tested with Home Assistant 2026.11.0.
 
 ## ⚙️ Pairing Configuration
 
@@ -104,29 +116,38 @@ After pairing, you can adjust the integration's behavior at any time from:
 
 ### 🔑 User Codes (`users.conf`)
 
-For **User Code required to Arm** and **User Code required to Disarm** to work as intended, you must add a `users.conf` file. The panel does not expose user codes over the API, so the integration needs this file to validate the code you enter when arming or disarming.
+When a code is required, this fork verifies a separate **Home Assistant PIN**
+locally, then sends the associated panel user ID. It does not change the physical
+panel's user code. A missing, malformed, or plaintext PIN file fails closed.
 
-Create the file at:
+After the integration connects, set your PIN in an interactive terminal. For a
+Home Assistant Container installation named `homeassistant`, run on its host:
 
-```
-<config>/qolsys_panel/users.conf
-```
-
-(where `<config>` is your Home Assistant configuration directory — the one containing `configuration.yaml`).
-
-The file is a JSON array of users, where each entry maps a panel **user id** to its **user code**:
-
-```json
-[
-  { "id": 1, "user_code": "1234" },
-  { "id": 2, "user_code": "5678" }
-]
+```sh
+docker exec -it homeassistant python /config/custom_components/qolsys_panel/set_pin.py
 ```
 
-- `id` must match an existing user id in your Qolsys Panel's user database. If an id is not found on the panel, it is logged as an error and ignored.
-- `user_code` is the code that user enters to arm/disarm.
+Choose your existing panel user ID from the displayed list and enter a separate
+8–12 digit PIN twice. Input is hidden and cannot be supplied on the command line.
+No alarm command is issued by the helper. Add `--check` to verify a PIN locally
+without operating the panel.
 
-After creating or editing `users.conf`, reload the integration (or restart Home Assistant) for the changes to be picked up. If the arm/disarm code options are enabled but `users.conf` is missing or empty, user-code validation will not work as intended.
+The helper writes `<config>/qolsys_panel/users.conf` atomically with mode `0600`.
+Each record contains an `id` and `user_code_hash`, using Argon2id with 64 MiB of
+memory, three passes, four lanes, a unique 32-byte random salt, and a 32-byte output.
+PIN updates take effect immediately. Verification runs outside Home Assistant's
+event loop, with one KDF allocation at a time and a limit of five failed attempts
+per 60 seconds per integration instance.
+
+Plaintext `user_code` records are deliberately rejected. If moving from an
+upstream installation, securely remove the old plaintext file and any plaintext
+copies you created, then use the helper to enroll a new Home Assistant PIN. The
+fork never converts or backs up plaintext PIN records. Short panel PINs are easy
+to guess even with a salted hash, which is why the helper requires 8–12 digits.
+
+The salt is stored with the hash and is not a secret. Hashing protects the stored
+PIN verifier; an administrator with access to Home Assistant or its pairing
+credentials can still control the panel.
 
 ## ✅ Supported Devices
 

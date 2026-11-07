@@ -8,18 +8,18 @@ from homeassistant.core import HomeAssistant
 ADAPTERS_PATH = "custom_components.qolsys_panel.utils.network.async_get_adapters"
 
 
-async def test_get_local_ip_returns_default_adapter(hass: HomeAssistant) -> None:
-    """The default adapter's IPv4 address is returned."""
+async def test_get_local_ip_returns_enabled_adapter(hass: HomeAssistant) -> None:
+    """The selected LAN adapter wins over a disabled VPN default route."""
     adapters = [
-        {"default": False, "ipv4": [{"address": "10.0.0.1"}]},
-        {"default": True, "ipv4": [{"address": "192.168.1.9"}]},
+        {"default": True, "enabled": False, "ipv4": [{"address": "100.64.0.1"}]},
+        {"default": False, "enabled": True, "ipv4": [{"address": "192.168.1.9"}]},
     ]
     with patch(ADAPTERS_PATH, AsyncMock(return_value=adapters)):
         assert await get_local_ip(hass) == "192.168.1.9"
 
 
-async def test_get_local_ip_no_default_adapter(hass: HomeAssistant) -> None:
-    """With no default adapter, an empty string is returned."""
-    adapters = [{"default": False, "ipv4": [{"address": "10.0.0.1"}]}]
+async def test_get_local_ip_no_enabled_adapter(hass: HomeAssistant) -> None:
+    """With no enabled IPv4 adapter, an empty string is returned."""
+    adapters = [{"default": True, "enabled": False, "ipv4": [{"address": "10.0.0.1"}]}]
     with patch(ADAPTERS_PATH, AsyncMock(return_value=adapters)):
         assert await get_local_ip(hass) == ""

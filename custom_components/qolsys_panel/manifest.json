@@ -2,6 +2,7 @@
   "domain": "qolsys_panel",
   "name": "Qolsys Panel",
   "codeowners": [
+    "@ahmedalhulaibi",
     "@EHylands"
   ],
   "config_flow": true,
@@ -10,12 +11,12 @@
     { "macaddress": "3C3178*" },
     { "macaddress": "18C1E2*" }
   ],
-  "documentation": "https://github.com/EHylands/ha-qolsys-panel",
+  "documentation": "https://github.com/ahmedalhulaibi/ha-qolsys-panel",
   "integration_type": "device",
   "iot_class": "local_push",
-  "issue_tracker": "https://github.com/EHylands/ha-qolsys-panel/issues",
+  "issue_tracker": "https://github.com/ahmedalhulaibi/ha-qolsys-panel/issues",
   "loggers": ["qolsys_panel", "qolsys_controller"],
-  "requirements": ["qolsys-controller==1.12.7"],
-  "version": "1.13.1"
+  "requirements": ["qolsys-controller==1.12.7", "cryptography==50.0.2"],
+  "version": "1.13.2"
 }
 

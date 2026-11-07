@@ -48,6 +48,17 @@ def mock_controller() -> Generator[MagicMock]:
     controller.controller_state = ControllerState.CONNECTED
     controller.panel.HARDWARE_VERSION = "IQ Panel 4"
 
+    # Give the PIN adapter the SDK command signatures, while keeping setup
+    # tests independent of the real SDK and any network transport.
+    async def arm(partition_id, arming_type, user_code="", *args, **kwargs):
+        return {}
+
+    async def disarm(partition_id, user_code="", silent_disarming=False):
+        return {}
+
+    controller.commands.panel.arm = arm
+    controller.commands.panel.disarm = disarm
+
     with (
         patch(
             "custom_components.qolsys_panel.qolsys_controller",

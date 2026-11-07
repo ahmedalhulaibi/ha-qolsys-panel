@@ -9,7 +9,8 @@ async def get_local_ip(hass: HomeAssistant) -> str:
     local_ip = ""
     adapters = await network.async_get_adapters(hass)
     for adapter in adapters:
-        if adapter["default"]:
+        # Respect the interfaces selected in Home Assistant, including VPN hosts.
+        if adapter["enabled"]:
             for ip_info in adapter["ipv4"]:
                 local_ip = ip_info["address"]
 

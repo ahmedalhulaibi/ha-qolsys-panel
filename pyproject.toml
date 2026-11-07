@@ -1,6 +1,6 @@
 [project]
 name = "ha-qolsys-panel"
-version = "1.13.1"
+version = "1.13.2"
 authors = [
   { name="Eric Hylands"},
 ]
@@ -15,9 +15,9 @@ classifiers = [
 license = "MIT"
 
 [project.urls]
-Homepage = "https://github.com/EHylands/ha-qolsys-panel"
-Issues = "https://github.com/EHylands/ha-qolsys-panel/issues"
-Repository = "https://github.com/EHylands/ha-qolsys-panel.git"
+Homepage = "https://github.com/ahmedalhulaibi/ha-qolsys-panel"
+Issues = "https://github.com/ahmedalhulaibi/ha-qolsys-panel/issues"
+Repository = "https://github.com/ahmedalhulaibi/ha-qolsys-panel.git"
 
 [build-system]
 requires = ["hatchling >= 1.27"]
