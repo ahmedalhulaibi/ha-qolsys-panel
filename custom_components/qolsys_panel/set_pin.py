@@ -61,7 +61,7 @@ def main() -> int:
             print("Choose an ID from the list above.")
             return 1
         user_id = int(selected)
-        print("Choose a separate Home Assistant PIN of 8 to 12 digits.")
+        print("Choose a separate Home Assistant PIN of 4 to 12 digits.")
         print("It will not change your physical panel code.")
         pin = getpass.getpass("New PIN (hidden): ")
         repeat = getpass.getpass("Repeat PIN (hidden): ")

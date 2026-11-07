@@ -16,8 +16,8 @@ from custom_components.qolsys_panel.pin_auth import (
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
-PIN = "7631948205"  # Synthetic test credentials, never a live alarm code.
-OTHER_PIN = "9542073186"
+PIN = "0729"  # Synthetic test credentials, never a live alarm code.
+OTHER_PIN = "6483"
 
 
 @pytest.fixture(autouse=True)
@@ -56,11 +56,14 @@ async def _start_pin_form(hass, entry):
 
 
 def _assert_no_secret(result, entry, logs):
-    rendered = (
-        json.dumps(result, default=str) + repr(entry.options) + repr(entry.data) + logs
+    rendered = json.dumps(
+        {"result": result, "options": dict(entry.options), "data": dict(entry.data)},
+        default=str,
     )
-    assert PIN not in rendered
-    assert OTHER_PIN not in rendered
+    assert json.dumps(PIN) not in rendered
+    assert json.dumps(OTHER_PIN) not in rendered
+    assert PIN not in logs
+    assert OTHER_PIN not in logs
     assert "DO NOT EXPORT" not in rendered
 
 
@@ -99,13 +102,13 @@ async def test_pin_enrollment_saves_hash_without_changing_options(
     assert set(records[0]) == {"id", "user_code_hash"}
     assert records[0]["user_code_hash"].startswith("$argon2id$v=19$m=65536,t=3,p=4$")
     assert path.stat().st_mode & 0o777 == 0o600
-    assert PIN not in path.read_text()
+    assert json.dumps(PIN) not in path.read_text()
     assert await hass.async_add_executor_job(verify_pin, path, PIN, frozenset({1})) == 1
     assert controller.commands.mock_calls == []
     _assert_no_secret(result, entry, caplog.text)
 
 
-@pytest.mark.parametrize("invalid", ["1234", "a" * 10, "１" * 8, "9" * 13])
+@pytest.mark.parametrize("invalid", ["123", "a" * 10, "１" * 4, "9" * 13])
 async def test_bad_pin_does_not_create_store(hass, pin_entry, invalid, caplog):
     entry, controller, path = pin_entry
     result = await _start_pin_form(hass, entry)
@@ -116,7 +119,7 @@ async def test_bad_pin_does_not_create_store(hass, pin_entry, invalid, caplog):
     assert result["errors"] == {"pin": "invalid_pin"}
     assert not path.exists()
     assert controller.commands.mock_calls == []
-    assert invalid not in json.dumps(result, default=str)
+    assert json.dumps(invalid) not in json.dumps(result, default=str)
     assert invalid not in caplog.text
 
 

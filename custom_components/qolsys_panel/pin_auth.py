@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
     from homeassistant.core import HomeAssistant
 
-_PIN = re.compile(r"[0-9]{8,12}\Z", re.ASCII)
+_PIN = re.compile(r"[0-9]{4,12}\Z", re.ASCII)
 _PHC = re.compile(
     r"\$argon2id\$v=19\$m=65536,t=3,p=4\$([A-Za-z0-9+/]{43})\$([A-Za-z0-9+/]{43})\Z"
 )
@@ -65,7 +65,7 @@ class PanelUser(TypedDict):
 def make_hash(pin: str) -> str:
     """Derive a PHC verifier with a fresh 256-bit random salt."""
     if not is_valid_pin(pin):
-        raise PinStoreError("Use a separate Home Assistant PIN of 8 to 12 digits.")
+        raise PinStoreError("Use a separate Home Assistant PIN of 4 to 12 digits.")
     return Argon2id(
         salt=secrets.token_bytes(32),
         length=32,

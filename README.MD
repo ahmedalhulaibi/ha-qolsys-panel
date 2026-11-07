@@ -122,7 +122,7 @@ panel's user code. A missing, malformed, or plaintext PIN file fails closed.
 
 After the integration connects, open **Settings → Devices & Services → Qolsys
 Panel → Configure → Set or change Home Assistant PIN**. Choose your panel user,
-enter a separate 8–12 digit PIN twice in the masked fields, and submit. PINs are
+enter a separate 4–12 digit PIN twice in the masked fields, and submit. PINs are
 never prefilled or returned in the form, saved in config entry options, or logged
 by the integration. A PIN update is available immediately without a restart.
 
@@ -134,7 +134,7 @@ docker exec -it homeassistant python /config/custom_components/qolsys_panel/set_
 ```
 
 Choose your existing panel user ID from the displayed list and enter a separate
-8–12 digit PIN twice. Input is hidden and cannot be supplied on the command line.
+4–12 digit PIN twice. Input is hidden and cannot be supplied on the command line.
 No alarm command is issued by the helper. Add `--check` to verify a PIN locally
 without operating the panel.
 
@@ -148,8 +148,10 @@ per 60 seconds per integration instance.
 Plaintext `user_code` records are deliberately rejected. If moving from an
 upstream installation, securely remove the old plaintext file and any plaintext
 copies you created, then use the helper to enroll a new Home Assistant PIN. The
-fork never converts or backs up plaintext PIN records. Short panel PINs are easy
-to guess even with a salted hash, which is why the helper requires 8–12 digits.
+fork never converts or backs up plaintext PIN records. Four-digit PINs are
+supported; longer PINs remain supported for existing credentials. Short PINs are
+easier to guess even with a salted hash. The online failed-attempt limit remains
+enabled for every supported PIN length.
 
 The salt is stored with the hash and is not a secret. Hashing protects the stored
 PIN verifier; an administrator with access to Home Assistant or its pairing

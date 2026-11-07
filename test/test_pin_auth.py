@@ -62,6 +62,14 @@ class StoreTests(unittest.TestCase):
     def test_missing_file_rejects(self):
         self.assertEqual(auth.verify_pin(self.path, PIN_A, frozenset({1})), -1)
 
+    def test_four_digit_pin_preserves_leading_zero(self):
+        pin = "0729"  # Synthetic test PIN only.
+        self.write([{"id": 1, "user_code_hash": auth.make_hash(pin)}])
+        self.assertEqual(auth.verify_pin(self.path, pin, frozenset({1})), 1)
+        self.assertEqual(auth.verify_pin(self.path, "0728", frozenset({1})), -1)
+        self.assertEqual(auth.verify_pin(self.path, "729", frozenset({1})), -1)
+        self.assertNotIn(json.dumps(pin), self.path.read_text())
+
     def test_insecure_or_malformed_stores_reject(self):
         invalid = [
             [{"id": 1, "user_code": PIN_A}],
@@ -97,7 +105,7 @@ class StoreTests(unittest.TestCase):
             self.write([])
 
     def test_short_and_non_ascii_pins_reject(self):
-        for pin in ("1234", "a" * 10, "１" * 8, "9" * 13, None):
+        for pin in ("123", "a" * 10, "１" * 4, "9" * 13, None):
             with self.assertRaises(auth.PinStoreError):
                 auth.make_hash(pin)
 

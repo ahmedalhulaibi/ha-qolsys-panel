@@ -87,7 +87,7 @@
       },
       "pin": {
         "title": "Home Assistant PIN",
-        "description": "Choose your panel user and a separate Home Assistant PIN of 8–12 digits. This does not change your physical panel code. Only a salted hash is saved, and the PIN takes effect immediately. No command is sent to the alarm panel.",
+        "description": "Choose your panel user and a separate Home Assistant PIN of 4–12 digits. This does not change your physical panel code. Only a salted hash is saved, and the PIN takes effect immediately. No command is sent to the alarm panel.",
         "data": {
           "panel_user": "Panel user",
           "pin": "New Home Assistant PIN",
@@ -100,7 +100,7 @@
     },
     "error": {
       "invalid_pin_user": "Choose a user that still exists on the panel.",
-      "invalid_pin": "Use a separate Home Assistant PIN of 8–12 digits (0–9).",
+      "invalid_pin": "Use a separate Home Assistant PIN of 4–12 digits (0–9).",
       "pin_mismatch": "The PINs do not match. Please enter them again.",
       "cannot_save_pin": "The PIN could not be saved. Check access to the configuration directory and try again."
     }
