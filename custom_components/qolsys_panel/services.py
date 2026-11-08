@@ -13,7 +13,7 @@ from homeassistant.components.alarm_control_panel import (
 )
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_CONFIG_ENTRY_ID
-from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv, entity_registry, service
 
@@ -35,6 +35,7 @@ from .const import (
     SERVICE_TRIGGER_POLICE,
 )
 from .types import QolsysPanelConfigEntry
+from .weather_sync import async_sync_weather
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -298,6 +299,20 @@ async def async_quick_exit(
 @callback
 def async_setup_services(hass: HomeAssistant) -> None:
     """Set up the services for the Qolsys Panel integration."""
+
+    service.async_register_admin_service(
+        hass,
+        DOMAIN,
+        "sync_weather",
+        async_sync_weather,
+        schema=vol.Schema(
+            {
+                vol.Required(ATTR_CONFIG_ENTRY_ID): cv.string,
+                vol.Required("weather_entity"): cv.entity_id,
+            }
+        ),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
 
     # Update Peek In Picture
     hass.services.async_register(

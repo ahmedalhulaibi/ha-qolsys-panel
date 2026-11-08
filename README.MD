@@ -311,3 +311,34 @@ Only devices that the panel no longer reports are removed. Devices still present
 | Water Valve      | 🛠️     | ❌     | ❌    | ❌    |
 
 🛠️ = partially supported or untested
+
+## Local weather updates from Home Assistant
+
+This fork adds the administrator-only `qolsys_panel.sync_weather` action. It
+copies an external Home Assistant daily forecast, such as `weather.forecast_home`
+from Met.no, to the panel over the existing paired local connection. No extra
+account, API key, or unencrypted copy of the pairing identity is needed.
+
+```yaml
+action: qolsys_panel.sync_weather
+data:
+  config_entry_id: YOUR_QOLSYS_CONFIG_ENTRY_ID
+  weather_entity: weather.forecast_home
+```
+
+Run this hourly and after Home Assistant starts. Forecasts must cover all four
+to seven existing panel weather rows with consecutive local dates and valid
+highs/lows. Sources older than six hours, unavailable sources, and the Qolsys
+weather entity itself are rejected. Updates are restricted to known weather
+columns; no sensor, user, arming, or other database table can be targeted.
+
+Original and last-run weather records are stored privately in
+`qolsys_panel/weather-sync/`, under the existing encrypted volume when configured.
+Each batch is read back and restored on failure. An interrupted batch is restored
+before the next update. The initial `*-original.json` is retained for recovery.
+
+Temperatures are converted to the panel's integer Fahrenheit storage, while the
+panel retains its configured display units. Missing precipitation probabilities
+are cleared rather than invented. Cloudy, partly cloudy, and snow icon IDs have
+been verified; other conditions currently use the generic cloud icon with the
+correct condition text. The integration does not add an Alarm.com subscription.

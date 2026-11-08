@@ -1,3 +1,19 @@
+sync_weather:
+  name: Synchronize weather
+  description: Copy a fresh daily forecast to the panel using its local connection. Saves weather-only rollback data in private Qolsys storage.
+  fields:
+    config_entry_id:
+      required: true
+      selector:
+        config_entry:
+          integration: qolsys_panel
+    weather_entity:
+      required: true
+      example: weather.forecast_home
+      selector:
+        entity:
+          filter:
+            - domain: weather
 update_picture_peek_in:
   fields:
     config_entry_id:
