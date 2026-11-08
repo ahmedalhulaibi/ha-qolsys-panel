@@ -39,7 +39,14 @@ def rows():
             "partition_id": "0",
             "high_temp": "15",
             "low_temp": "1",
-            "day_of_week": "Old day",
+            "day_of_week": (
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+            )[n],
             "condition": "Light Snow",
             "icon": "15",
             "precipitation": "59",
@@ -67,13 +74,15 @@ def test_build_dates_and_preserve_metadata():
     """UTC Sunday remains Saturday locally; all six future days are replaced."""
     original = rows()
     result = build_rows(original, forecast(), "°C", NOW, ZONE)
-    assert result[0]["day_of_week"] == "Saturday"
-    assert result[-1]["day_of_week"] == "Thursday"
-    assert result[0]["high_temp"] == "48"
-    assert result[0]["low_temp"] == "39"
-    assert result[0]["icon"] == "4"
-    assert result[0]["precipitation"] == ""
-    assert result[0]["current_weather_date"] == "1794070800000"
+    by_day = {row["day_of_week"]: row for row in result}
+    today = by_day["Saturday"]
+    assert today["_id"] == "6221"
+    assert by_day["Monday"]["_id"] == "6220"
+    assert today["high_temp"] == "48"
+    assert today["low_temp"] == "39"
+    assert today["icon"] == "4"
+    assert today["precipitation"] == ""
+    assert today["current_weather_date"] == "1794070800000"
     assert [
         {k: row[k] for k in ("_id", "partition_id", "version", "opr")} for row in result
     ] == [
@@ -119,8 +128,14 @@ def test_probability_and_unknown():
     data = forecast()
     data[0]["precipitation_probability"] = 42
     actual = build_rows(rows(), data, "°C", NOW, ZONE)
-    assert actual[0]["precipitation"] == "42"
-    assert actual[1]["precipitation"] == ""
+    assert (
+        next(row for row in actual if row["day_of_week"] == "Saturday")["precipitation"]
+        == "42"
+    )
+    assert (
+        next(row for row in actual if row["day_of_week"] == "Sunday")["precipitation"]
+        == ""
+    )
     data[0]["precipitation_probability"] = 101
     with pytest.raises(ValueError):
         build_rows(rows(), data, "°C", NOW, ZONE)
@@ -141,7 +156,7 @@ def test_schema_rejects_extra_columns_and_duplicate_ids():
 async def test_write_has_fixed_uri_and_fields():
     """No arbitrary table, SQL predicate, or metadata column can be written."""
     command = MagicMock()
-    command.send_command = AsyncMock()
+    command.send_command = AsyncMock(return_value={"booleanValue": "true"})
     with patch(
         "custom_components.qolsys_panel.weather_sync.MQTTCommand", return_value=command
     ):
@@ -171,6 +186,32 @@ async def test_replace_skips_unchanged_and_checks_row_ids():
         with pytest.raises(ValueError):
             await replace_rows(MagicMock(), other)
         writer.assert_not_called()
+
+
+async def test_panel_unique_weekday_slots_and_rollback():
+    """A real panel rejects duplicate weekdays even during a partial batch."""
+    stored = rows()
+    desired = build_rows(stored, forecast(), "°C", NOW, ZONE)
+
+    async def reader(_controller):
+        return [dict(row) for row in stored]
+
+    async def writer(_controller, row):
+        assert not any(
+            old["_id"] != row["_id"] and old["day_of_week"] == row["day_of_week"]
+            for old in stored
+        )
+        index = next(i for i, old in enumerate(stored) if old["_id"] == row["_id"])
+        stored[index] = dict(row)
+
+    with (
+        patch("custom_components.qolsys_panel.weather_sync.read_rows", reader),
+        patch("custom_components.qolsys_panel.weather_sync.write_row", writer),
+    ):
+        assert await replace_rows(MagicMock(), desired) == 6
+        assert stored == desired
+        assert await replace_rows(MagicMock(), rows()) == 6
+        assert stored == rows()
 
 
 def test_private_backup_and_original_retained(tmp_path: Path):

@@ -39,6 +39,15 @@ WRITE_FIELDS = frozenset(
     }
 )
 ROW_FIELDS = WRITE_FIELDS | {"_id", "version", "opr", "partition_id"}
+WEEKDAYS = (
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+)
 # These icon IDs are confirmed from the panel's own saved forecasts. Other
 # conditions use its generic cloud icon until their icon IDs are verified.
 CONDITIONS = {
@@ -83,6 +92,10 @@ def validate_rows(value: Any) -> list[dict[str, str]]:
         rows.append(normalized)
     if len({row["_id"] for row in rows}) != len(rows):
         raise ValueError("Duplicate weather rows")
+    if any(row["day_of_week"] not in WEEKDAYS for row in rows) or len(
+        {row["day_of_week"] for row in rows}
+    ) != len(rows):
+        raise ValueError("Weather rows need unique weekday slots")
     return sorted(rows, key=lambda row: int(row["_id"]))
 
 
@@ -127,11 +140,18 @@ def build_rows(
             raise ValueError("Duplicate daily forecasts")
         by_day[day] = (item, stamp)
     today = now.astimezone(zone).date()
+    wanted_days = {(today + timedelta(days=n)).strftime("%A") for n in range(len(rows))}
+    existing_slots = {row["day_of_week"]: row for row in rows}
+    free_slots = iter(row for row in rows if row["day_of_week"] not in wanted_days)
     result = []
-    for offset, row in enumerate(rows):
+    for offset in range(len(rows)):
         day = today + timedelta(days=offset)
         if day not in by_day:
             raise ValueError("Forecast does not cover every panel day")
+        weekday = day.strftime("%A")
+        # Keep weekdays on their original row IDs. Only an unused weekday slot
+        # may be renamed, avoiding collisions in the panel's unique-day index.
+        row = existing_slots[weekday] if weekday in existing_slots else next(free_slots)
         item, stamp = by_day[day]
         high = fahrenheit(item.get("temperature"), unit)
         low = fahrenheit(item.get("templow"), unit)
@@ -165,7 +185,7 @@ def build_rows(
                 "current_weather_date": str(int(stamp.timestamp() * 1000)),
             }
         )
-    return result
+    return sorted(result, key=lambda row: int(row["_id"]))
 
 
 def save_backup(root: Path, entry_id: str, value: dict[str, Any]) -> None:
@@ -226,7 +246,9 @@ async def write_row(controller: Any, row: dict[str, str]) -> None:
     command.append("uri", WEATHER_URI)
     command.append("selection", "_id=" + str(int(row["_id"])))
     command.append("contentValues", {key: row[key] for key in WRITE_FIELDS})
-    await command.send_command()
+    response = await command.send_command()
+    if response.get("booleanValue") not in (True, "true"):
+        raise ValueError("Panel rejected a weather row update")
 
 
 async def replace_rows(controller: Any, desired: list[dict[str, str]]) -> int:
@@ -236,9 +258,12 @@ async def replace_rows(controller: Any, desired: list[dict[str, str]]) -> int:
     if [row["_id"] for row in current] != [row["_id"] for row in desired]:
         raise ValueError("Panel weather rows changed during synchronization")
     changed = 0
-    for old, new in zip(current, desired, strict=True):
+    for index, (old, new) in enumerate(zip(current, desired, strict=True)):
         if old != new:
             await write_row(controller, new)
+            current[index] = new
+            if await read_rows(controller) != current:
+                raise ValueError("Panel did not retain the expected weather row")
             changed += 1
     if await read_rows(controller) != desired:
         raise ValueError("Panel did not retain the expected forecast")
@@ -320,13 +345,14 @@ async def async_sync_weather(call: ServiceCall) -> dict[str, Any]:
             record["state"] = "success"
             record["changed_rows"] = changed
             await hass.async_add_executor_job(save_backup, root, entry.entry_id, record)
+            today_row = min(desired, key=lambda row: int(row["current_weather_date"]))
             return {
                 "source": source,
                 "days": len(desired),
                 "changed_rows": changed,
                 "updated_at": now.isoformat(),
-                "today_high_fahrenheit": desired[0]["high_temp"],
-                "today_low_fahrenheit": desired[0]["low_temp"],
+                "today_high_fahrenheit": today_row["high_temp"],
+                "today_low_fahrenheit": today_row["low_temp"],
             }
         except Exception as error:
             if record is not None:
