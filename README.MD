@@ -23,6 +23,14 @@ Home Assistant. Keep `<config>/qolsys_panel` intact: it contains pairing credent
 and the PIN verifier file. This fork pins `qolsys-controller==1.12.7` and
 `cryptography==50.0.2`; it is tested with Home Assistant 2026.11.0.
 
+## Scene names
+
+Panel scenes appear as standalone named actions in Home Assistant's Scenes list,
+so a panel device name is not prepended to their labels. Existing entity IDs and
+custom names are preserved when upgrading. The scenes remain part of the Qolsys
+integration and execute the same saved panel routines; they no longer appear
+under the panel device's entities.
+
 ## ⚙️ Pairing Configuration
 
 You can pair with your Qolsys Panel using one of the following two methods:

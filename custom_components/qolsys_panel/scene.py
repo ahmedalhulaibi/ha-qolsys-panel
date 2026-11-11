@@ -44,11 +44,16 @@ class QolsysPanelScene(Scene, QolsysPanelEntity):
     ) -> None:
         """Initialise a Qolsys Scene entity."""
         super().__init__(QolsysPanel, unique_id)
+        # Scenes are named actions, not properties of the panel device. Newer
+        # HA scene lists prepend the attached device's name independently of
+        # friendly_name, even when has_entity_name is False. Leaving this unset
+        # also migrates existing registry entries without changing their IDs.
+        self._attr_device_info = None
         self._attr_unique_id = f"{unique_id}_scene_{scene_id}"
         self._scene_id = scene_id
         scene = QolsysPanel.state.scene(scene_id)
         assert scene is not None
-        self._attr_name = f"Qolsys Panel - {scene.name}"
+        self._attr_name = f"{scene.name} Scene"
 
     async def async_activate(self, **kwargs: Any) -> None:
         """Activate scene. Try to get entities into requested state."""
